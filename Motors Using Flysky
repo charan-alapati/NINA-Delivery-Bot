@@ -1,0 +1,103 @@
+/* motors_flysky.ino
+   Read FlySky RC receiver channels and drive 2 H-bridges (4 outputs)
+   Based on code in Final_Report (Motors Using Flysky). :contentReference[oaicite:6]{index=6}
+*/
+
+const uint8_t PIN_CH1 = 2;   // RC input channel 1 (pulseIn)
+const uint8_t PIN_CH2 = 3;   // RC input channel 2 (pulseIn)
+
+// Motor output pins (example: two H-bridge driver channels)
+const uint8_t M1_FORWARD = 4;
+const uint8_t M1_BACK    = 5;
+const uint8_t M2_FORWARD = 6;
+const uint8_t M2_BACK    = 7;
+
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(PIN_CH1, INPUT);
+  pinMode(PIN_CH2, INPUT);
+
+  pinMode(M1_FORWARD, OUTPUT);
+  pinMode(M1_BACK, OUTPUT);
+  pinMode(M2_FORWARD, OUTPUT);
+  pinMode(M2_BACK, OUTPUT);
+
+  // make sure motors are off initially
+  digitalWrite(M1_FORWARD, LOW);
+  digitalWrite(M1_BACK, LOW);
+  digitalWrite(M2_FORWARD, LOW);
+  digitalWrite(M2_BACK, LOW);
+}
+
+void loop() {
+  unsigned long ch1 = pulseIn(PIN_CH1, HIGH, 30000); // microsecond pulse width
+  unsigned long ch2 = pulseIn(PIN_CH2, HIGH, 30000);
+
+  // Debug
+  // Serial.print("ch1: "); Serial.print(ch1); Serial.print(" ch2: "); Serial.println(ch2);
+
+  // If no pulse (receiver off) -> stop motors
+  if (ch1 == 0 && ch2 == 0) {
+    stopMotors();
+    return;
+  }
+
+  // These thresholds come from your original implementation
+  const unsigned long HIGH_THR = 1530;
+  const unsigned long LOW_THR  = 1460;
+
+  if (ch1 > HIGH_THR && ch2 > HIGH_THR) {
+    // Forward
+    driveForward();
+  } else if (ch1 > HIGH_THR && ch2 < LOW_THR) {
+    // Turn right (example mapping)
+    turnRight();
+  } else if (ch1 < LOW_THR && ch2 > HIGH_THR) {
+    // Turn left
+    turnLeft();
+  } else if (ch1 < LOW_THR && ch2 < LOW_THR) {
+    // Backward
+    driveBackward();
+  } else {
+    stopMotors();
+  }
+
+  delay(50);
+}
+
+// Motor helper functions
+void stopMotors() {
+  digitalWrite(M1_FORWARD, LOW);
+  digitalWrite(M1_BACK, LOW);
+  digitalWrite(M2_FORWARD, LOW);
+  digitalWrite(M2_BACK, LOW);
+}
+
+void driveForward() {
+  digitalWrite(M1_FORWARD, HIGH);
+  digitalWrite(M1_BACK, LOW);
+  digitalWrite(M2_FORWARD, LOW);
+  digitalWrite(M2_BACK, HIGH);
+}
+
+void driveBackward() {
+  digitalWrite(M1_FORWARD, LOW);
+  digitalWrite(M1_BACK, HIGH);
+  digitalWrite(M2_FORWARD, HIGH);
+  digitalWrite(M2_BACK, LOW);
+}
+
+void turnRight() {
+  digitalWrite(M1_FORWARD, HIGH);
+  digitalWrite(M1_BACK, LOW);
+  digitalWrite(M2_FORWARD, HIGH);
+  digitalWrite(M2_BACK, LOW);
+}
+
+void turnLeft() {
+  digitalWrite(M1_FORWARD, LOW);
+  digitalWrite(M1_BACK, HIGH);
+  digitalWrite(M2_FORWARD, LOW);
+  digitalWrite(M2_BACK, HIGH);
+}
